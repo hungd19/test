@@ -37,6 +37,18 @@ jobs:
         run: |
           cd ${{ github.event.client_payload.data.directory || '.' }}
           npm run build
+      - id: prepare-files
+        name: Preparing files for Walrus deployment...
+        run: |
+          # Create a deploy directory with only files, no directories
+          mkdir -p walrus-deploy
+          # Find all files in .next and copy them to walrus-deploy with flattened paths
+          find .next -type f -not -path "*/node_modules/*" | while read file; do
+            # Create a safe filename by replacing / with --
+            filename=$(echo "$file" | sed 's/\//-/g')
+            cp "$file" "walrus-deploy/$filename"
+          done
+          echo "Created $(find walrus-deploy -type f | wc -l) files in walrus-deploy"
       - id: cache
         name: Recovering cache...
         uses: actions/cache@v4
@@ -49,4 +61,4 @@ jobs:
         with:
           config-path: './site.config.json'
         env:
-          ED25519_PRIVATE_KEY: "suiprivkey1qrej3l7f6lpcsztuwuvpcygs9sxxc498eazv3fx797tqfyqeklx2wtu7zl3"
+          ED25519_PRIVATE_KEY: 'suiprivkey1qrej3l7f6lpcsztuwuvpcygs9sxxc498eazv3fx797tqfyqeklx2wtu7zl3'

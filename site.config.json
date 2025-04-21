@@ -11,7 +11,7 @@
     "creator": "my-org"
   },
   "epochs": 30,
-  "path": ".next/static",
+  "path": "./walrus-deploy",
   "gas_budget": 100000000,
   "write_retry_limit": 3,
   "object_id": ""

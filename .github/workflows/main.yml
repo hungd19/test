@@ -1,3 +1,4 @@
+# Plasmic workflow v4
 name: Sync, build and deploy Plasmic app
 
 permissions:
@@ -26,6 +27,16 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "20"
+      - id: install
+        name: Installing dependencies...
+        run: |
+          cd ${{ github.event.client_payload.data.directory || '.' }}
+          npm ci || npm install
+      - id: nextjs-build
+        name: Building Next.js app...
+        run: |
+          cd ${{ github.event.client_payload.data.directory || '.' }}
+          npm run build
       - id: cache
         name: Recovering cache...
         uses: actions/cache@v4

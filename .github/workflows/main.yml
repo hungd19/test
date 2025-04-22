@@ -1,0 +1,116 @@
+# Plasmic workflow v4
+name: Sync, build and deploy Plasmic app
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  repository_dispatch:
+    types: [plasmic]
+  push:
+    branches: [ main ]
+
+jobs:
+  job:
+    name: Sync, build and deploy
+    runs-on: ubuntu-latest
+    steps:
+      - id: checkout
+        name: Checking out repository...
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - id: node
+        name: Setting up node v20...
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+
+      - id: install
+        name: Installing dependencies...
+        run: |
+          cd ${{ github.event.client_payload.data.directory || '.' }}
+          npm ci || npm install
+
+      - id: nextjs-build
+        name: Building Next.js app...
+        run: |
+          cd ${{ github.event.client_payload.data.directory || '.' }}
+          npm run build
+
+      - id: prepare-files
+        name: Preparing files for Walrus deployment...
+        run: |
+          # Debug - see what's in the current directory
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
+
+          # Check if .next exists
+          if [ ! -d ".next" ]; then
+            echo "ERROR: .next directory not found! Checking subdirectories..."
+            find . -name ".next" -type d
+            # If .next is in a subdirectory, adjust the path accordingly
+            NEXT_DIR=$(find . -name ".next" -type d | head -1)
+            if [ -n "$NEXT_DIR" ]; then
+              echo "Found .next at: $NEXT_DIR"
+            else
+              echo "Could not find .next directory anywhere!"
+              exit 1
+            fi
+          else
+            NEXT_DIR=".next"
+          fi
+
+          # Create deploy directory with only files
+          mkdir -p walrus-deploy
+
+          # Copy static files from .next
+          if [ -d "$NEXT_DIR/static" ]; then
+            echo "Copying static files from $NEXT_DIR/static"
+            find "$NEXT_DIR/static" -type f | while read file; do
+              # Create a filename with directory structure preserved
+              newfile="walrus-deploy/$(echo "${file#$NEXT_DIR/}" | sed 's/\//-/g')"
+              cp "$file" "$newfile"
+              echo "Copied $file to $newfile"
+            done
+          fi
+
+          # Copy public files if they exist
+          if [ -d "public" ]; then
+            echo "Copying files from public directory"
+            find "public" -type f | while read file; do
+              newfile="walrus-deploy/$(echo "$file" | sed 's/\//-/g')"
+              cp "$file" "$newfile"
+              echo "Copied $file to $newfile"
+            done
+          fi
+
+          # Add an index.html file if it doesn't exist
+          if [ ! -f "walrus-deploy/index.html" ]; then
+            echo "<html><head><title>Next.js App</title></head><body><h1>Next.js App</h1><p>Deployed with Walrus</p></body></html>" > walrus-deploy/index.html
+            echo "Created default index.html"
+          fi
+
+          # Debug - list files in walrus-deploy
+          echo "Files in walrus-deploy:"
+          find walrus-deploy -type f | sort
+          echo "Created $(find walrus-deploy -type f | wc -l) files in walrus-deploy"
+
+      - id: cache
+        name: Recovering cache...
+        uses: actions/cache@v4
+        with:
+          key: lock-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}
+          path: ${{ github.event.client_payload.data.directory || '.' }}/node_modules
+
+      - id: deploy
+        name: Deploy to Walrus Sites
+        uses: zktx-io/walrus-sites-provenance@v0.3.4
+        with:
+          config-path: './site.config.json'
+        env:
+          ED25519_PRIVATE_KEY: 'suiprivkey1qrej3l7f6lpcsztuwuvpcygs9sxxc498eazv3fx797tqfyqeklx2wtu7zl3'

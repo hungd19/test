@@ -10,9 +10,9 @@
     "project_url": "https://github.com/my-org/my-walrus-site",
     "creator": "my-org"
   },
-  "epochs": 30,
+  "epochs": 5,
   "path": "./walrus-deploy",
   "gas_budget": 100000000,
   "write_retry_limit": 3,
-  "object_id": "0x43679717c0b00fa4bbcd5406e29f52d1449818ee3a6446ad04d278227aa096a4"
+  "object_id": ""
 }

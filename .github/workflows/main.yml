@@ -86,12 +86,6 @@ jobs:
             done
           fi
 
-          # Add an index.html file if it doesn't exist
-          if [ ! -f "walrus-deploy/index.html" ]; then
-            echo "<html><head><title>Next.js App</title></head><body><h1>Next.js App</h1><p>Deployed with Walrus</p></body></html>" > walrus-deploy/index.html
-            echo "Created default index.html"
-          fi
-
           # Debug - list files in walrus-deploy
           echo "Files in walrus-deploy:"
           find walrus-deploy -type f | sort

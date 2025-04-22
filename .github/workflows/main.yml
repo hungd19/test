@@ -1,13 +1,10 @@
 # Plasmic workflow v4
-name: Sync, build and deploy Plasmic app
+name: Sync, build and deploy app
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 on:
-  repository_dispatch:
-    types: [plasmic]
   push:
     branches: [ main ]
 
